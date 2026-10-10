@@ -1,4 +1,4 @@
-# PS3 Reimagined
+# PS3 Reimagined (Experiment)
 
 Una interfaz al estilo del **XMB de la PS3** para lanzar los juegos de tu PC,
 como Steam Big Picture pero con el menú de la consola. Es una app de escritorio
