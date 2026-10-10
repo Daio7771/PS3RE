@@ -8,11 +8,39 @@ Proyecto de fans: **no usa ningún recurso de Sony**. Los iconos son SVG
 propios, los sonidos se sintetizan en tiempo real con Web Audio y el fondo es
 un shader WebGL original.
 
+> [!IMPORTANT]
+> **Esto es un experimento, no un producto.** Nació para responder a una
+> pregunta: *¿hasta dónde se puede llegar construyendo una app completa
+> dirigiendo a una IA, sin escribir el código a mano?* No pretende competir con
+> otros lanzadores ni presentarse como trabajo de un programador profesional.
+
 > [!NOTE]
-> **Proyecto hecho con IA.** El código, los gráficos SVG, los sonidos y la
-> documentación los ha generado una inteligencia artificial
+> **Proyecto hecho con IA («vibe coding»).** El código, los gráficos SVG, los
+> sonidos y la documentación los ha generado una inteligencia artificial
 > ([Claude](https://www.anthropic.com/claude), de Anthropic, mediante Claude
-> Code), siguiendo las indicaciones y la revisión de Daio7771 fase a fase.
+> Code). El papel de Daio7771 ha sido idear el proyecto, decidir cada fase,
+> probarlo en su equipo y revisar el resultado.
+
+## Sobre el experimento
+
+**Qué es:**
+
+- Una prueba de concepto para ver qué tal sale un proyecto de varias fases
+  hecho con IA: interfaz, gráficos, audio, integración con Windows y tiendas
+  de juegos.
+- Un proyecto personal y de fans, compartido por si a alguien le resulta
+  curioso o útil.
+
+**Qué no es:**
+
+- No es software terminado ni mantenido como tal: puede tener fallos, cambiar
+  mucho entre versiones o quedarse parado.
+- No es una muestra de habilidad programando «a mano», y no lo pretende.
+- No sustituye a Steam Big Picture ni a otros lanzadores serios.
+
+Si lo pruebas, úsalo con esa idea en mente. Las críticas constructivas, los
+fallos encontrados y las ideas son bienvenidos en los
+[issues](https://github.com/Daio7771/PS3RE/issues).
 
 ## Qué hace
 
