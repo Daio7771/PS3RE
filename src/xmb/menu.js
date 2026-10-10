@@ -114,7 +114,7 @@ export function buildMenu({ mode, games }) {
               id: 'github',
               label: 'Abrir en GitHub',
               href: ABOUT.github,
-              value: ABOUT.github.replace(/^https?:\/\//, ''),
+              value: ABOUT.github.replace(/^https?:\/\/(www\.)?github\.com\//, ''),
             },
           ],
         },

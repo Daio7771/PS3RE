@@ -8,6 +8,12 @@ Proyecto de fans: **no usa ningún recurso de Sony**. Los iconos son SVG
 propios, los sonidos se sintetizan en tiempo real con Web Audio y el fondo es
 un shader WebGL original.
 
+> [!NOTE]
+> **Proyecto hecho con IA.** El código, los gráficos SVG, los sonidos y la
+> documentación los ha generado una inteligencia artificial
+> ([Claude](https://www.anthropic.com/claude), de Anthropic, mediante Claude
+> Code), siguiendo las indicaciones y la revisión de Daio7771 fase a fase.
+
 ## Qué hace
 
 - **XMB**: fondo animado de ondas (WebGL, limitado a 60 fps aunque el monitor

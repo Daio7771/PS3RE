@@ -104,6 +104,7 @@ export function createInfoSources({ background, sfx }) {
         ['Proyecto', ABOUT.name],
         ['Versión', P.APP_VERSION],
         ['Autor', ABOUT.author],
+        ['Desarrollo', 'Hecho con IA (Claude, de Anthropic)'],
         ['Licencia', 'MIT'],
         ['GitHub', ABOUT.github.replace(/^https?:\/\//, '')],
         ['Descripción', 'Réplica fan-made del XMB de la PS3 (firmware final)'],
