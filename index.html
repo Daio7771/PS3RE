@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es" class="boot-pending">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>PS3 Reimagined · XMB</title>
+    <script src="/in-app.js"></script>
+  </head>
+  <body>
+    <canvas id="xmb-background" aria-hidden="true"></canvas>
+
+    <div class="ui">
+      <nav class="xmb" id="xmb" aria-label="Menú principal"></nav>
+      <time class="clock" id="clock"></time>
+      <div class="fps-meter" id="fps-meter" hidden></div>
+    </div>
+
+    <div class="launch" id="launch" role="status" aria-live="polite" hidden></div>
+
+    <div class="boot" id="boot">
+      <p class="boot__prompt"><span>Pulsa cualquier tecla o botón</span></p>
+      <div class="boot__light" aria-hidden="true"></div>
+      <div class="boot__title">
+        <h1 class="boot__name">PS3 <span>Reimagined</span></h1>
+        <p class="boot__by">by Daio7771</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

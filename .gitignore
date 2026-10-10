@@ -1,0 +1,12 @@
+# Dependencias y compilación
+node_modules
+dist
+
+# Registros y archivos del sistema
+*.log
+.DS_Store
+Thumbs.db
+
+# Configuración local de herramientas
+.claude/
+.vscode/

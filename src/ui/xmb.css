@@ -1,0 +1,399 @@
+/* XMB: lienzo 16:9 centrado; todas las medidas en u (ver config/layout.js). */
+
+.xmb {
+  --move: 230ms;
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  --icon-shadow: drop-shadow(0 calc(var(--u) * 0.25) calc(var(--u) * 0.5) rgb(0 0 0 / 0.28));
+  --icon-glow: drop-shadow(0 0 calc(var(--u) * 1.1) rgb(255 255 255 / 0.5))
+    drop-shadow(0 calc(var(--u) * 0.25) calc(var(--u) * 0.5) rgb(0 0 0 / 0.28));
+  --text-glow:
+    0 0 calc(var(--u) * 1.2) rgb(255 255 255 / 0.45),
+    0 calc(var(--u) * 0.12) calc(var(--u) * 0.3) rgb(0 0 0 / 0.3);
+
+  /* Centrado sin transform: así el panel de opciones (position: fixed) se
+     ancla a la ventana y no a este lienzo. */
+  position: absolute;
+  left: calc(50% - var(--u) * 88.8889);
+  top: calc(50% - var(--u) * 50);
+  width: calc(var(--u) * 177.7778);
+  height: calc(var(--u) * 100);
+}
+
+.xmb.no-anim,
+.xmb.no-anim * {
+  transition: none !important;
+}
+
+.xmb-track {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(var(--track-x) * var(--u)));
+  transition: transform var(--move) var(--ease);
+}
+
+/* ── Categorías ────────────────────────────────────────── */
+
+.xmb-cat {
+  position: absolute;
+  top: 0;
+  left: calc(var(--i) * var(--cat-gap) * var(--u));
+}
+
+.xmb-cat__head {
+  position: absolute;
+  left: 0;
+  top: calc(var(--bar-y) * var(--u));
+  transition: opacity var(--move) ease;
+}
+
+.xmb-cat__icon {
+  position: absolute;
+  width: calc(var(--cat-size) * var(--u));
+  height: calc(var(--cat-size) * var(--u));
+  left: calc(var(--cat-size) * var(--u) * -0.5);
+  top: calc(var(--cat-size) * var(--u) * -0.5);
+  overflow: visible;
+  opacity: 0.85;
+  transform: scale(var(--cat-idle-scale));
+  filter: var(--icon-shadow);
+  transition:
+    transform var(--move) var(--ease),
+    opacity var(--move) ease;
+}
+
+.xmb-cat.is-selected .xmb-cat__icon {
+  opacity: 1;
+  transform: none;
+  filter: var(--icon-glow);
+}
+
+.xmb-cat__label {
+  position: absolute;
+  left: 0;
+  top: calc(var(--cat-size) * var(--u) * 0.5 + var(--u) * 0.8);
+  transform: translateX(-50%);
+  font-size: calc(var(--u) * 2.4);
+  white-space: nowrap;
+  text-shadow: var(--text-shadow);
+  opacity: 0;
+  transition: opacity var(--move) ease;
+}
+
+.xmb-cat.is-selected .xmb-cat__label {
+  opacity: 1;
+}
+
+/* ── Columna de elementos ──────────────────────────────── */
+
+.xmb-col {
+  position: absolute;
+  left: 0;
+  top: 0;
+  list-style: none;
+  opacity: 0;
+  transition: opacity calc(var(--move) * 0.8) ease;
+}
+
+.xmb-cat.is-selected .xmb-col {
+  opacity: 1;
+}
+
+.xmb-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateY(calc(var(--y) * var(--u)));
+  transition:
+    transform var(--move) var(--ease),
+    opacity var(--move) ease;
+}
+
+.xmb-item.is-above {
+  opacity: 0.8;
+}
+
+.xmb-item__icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--item-w) * var(--u));
+  height: calc(var(--item-h) * var(--u));
+  left: calc(var(--item-w) * var(--u) * -0.5);
+  top: calc(var(--item-h) * var(--u) * -0.5);
+  transform: scale(var(--item-idle-scale));
+  opacity: 0.88;
+  filter: var(--icon-shadow);
+  transition:
+    transform var(--move) var(--ease),
+    opacity var(--move) ease;
+}
+
+.xmb-item.is-selected .xmb-item__icon {
+  transform: none;
+  opacity: 1;
+  filter: var(--icon-glow);
+}
+
+.xmb-glyph {
+  height: 100%;
+  aspect-ratio: 1;
+  overflow: visible;
+}
+
+.xmb-tile {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--u) * 0.3);
+}
+
+.xmb-tile text {
+  font-family: var(--font-ui);
+}
+
+/* Carátula real (cabecera de Steam, ≈ 2,14 : 1): a todo el ancho de la caja y
+   con su propia proporción, para no recortar logos que llegan al borde. */
+.xmb-tile--art {
+  display: block;
+  height: auto;
+  box-shadow: 0 0 0 max(1px, calc(var(--u) * 0.1)) rgb(255 255 255 / 0.35);
+}
+
+.xmb-item__label {
+  position: absolute;
+  left: calc(var(--label-x) * var(--u));
+  top: 0;
+  font-size: calc(var(--u) * 2.8);
+  line-height: 1.2;
+  white-space: nowrap;
+  text-shadow: var(--text-shadow);
+  opacity: 0.72;
+  transform: translateY(-50%) scale(0.9);
+  transform-origin: left center;
+  transition:
+    transform var(--move) var(--ease),
+    opacity var(--move) ease;
+}
+
+.xmb-item.is-selected .xmb-item__label {
+  opacity: 1;
+  transform: translateY(-50%);
+  text-shadow: var(--text-glow);
+}
+
+/* ── Submenú abierto: el XMB se aparta ─────────────────── */
+
+.xmb.is-sub .xmb-cat__head,
+.xmb.is-sub .xmb-item:not(.is-selected),
+.xmb.is-sub .xmb-item.is-selected .xmb-item__label {
+  opacity: 0;
+}
+
+/* Fila resaltada: banda fija sobre la que se desplazan las filas. */
+.xmb-sub__bar,
+.xmb-options__bar {
+  position: absolute;
+  height: calc(var(--u) * 5.2);
+  margin-top: calc(var(--u) * -2.6);
+  border-block: 1px solid;
+  border-image: linear-gradient(
+      to right,
+      rgb(255 255 255 / 0),
+      rgb(255 255 255 / 0.3) calc(var(--u) * 6),
+      rgb(255 255 255 / 0.15) 70%,
+      rgb(255 255 255 / 0)
+    )
+    1;
+  background: linear-gradient(
+    to right,
+    rgb(255 255 255 / 0) 0,
+    rgb(255 255 255 / 0.16) calc(var(--u) * 6),
+    rgb(255 255 255 / 0.1) 70%,
+    rgb(255 255 255 / 0) 100%
+  );
+}
+
+/* Filas de lista y de opciones: altura fija centrada en su --y. */
+.xmb-entry,
+.xmb-option {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: calc(var(--u) * 5);
+  margin-top: calc(var(--u) * -2.5);
+  white-space: nowrap;
+  text-shadow: var(--text-shadow);
+  opacity: 0.72;
+  transform: translateY(calc(var(--y) * var(--u)));
+  transition:
+    transform var(--move) var(--ease),
+    opacity var(--move) ease;
+}
+
+.xmb-entry.is-selected,
+.xmb-option.is-selected {
+  opacity: 1;
+  text-shadow: var(--text-glow);
+}
+
+/* ── Lista de entradas ─────────────────────────────────── */
+
+.xmb-sub {
+  position: absolute;
+  left: calc(var(--sub-list-x) * var(--u));
+  top: 0;
+  opacity: 0;
+  transform: translateX(calc(var(--u) * 5));
+  transition:
+    opacity var(--move) ease,
+    transform var(--move) var(--ease);
+}
+
+.xmb-sub.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+.xmb-sub__bar {
+  left: calc(var(--u) * -4);
+  top: calc(var(--selected-y) * var(--u));
+  width: calc((177.7778 - var(--sub-list-x) + 4) * var(--u));
+}
+
+.xmb-entry {
+  font-size: calc(var(--u) * 2.6);
+}
+
+.xmb-entry__value {
+  position: absolute;
+  left: calc(var(--sub-value-x) * var(--u));
+  font-size: calc(var(--u) * 2.3);
+  opacity: 0.85;
+}
+
+.xmb-entry.is-disabled {
+  opacity: 0.36;
+}
+
+.xmb-entry.is-disabled.is-selected {
+  opacity: 0.55;
+}
+
+/* Con un panel abierto, la lista queda en segundo plano. */
+.xmb.is-options .xmb-entry:not(.is-selected),
+.xmb.is-info .xmb-entry:not(.is-selected) {
+  opacity: 0.3;
+}
+
+/* ── Paneles del borde derecho (opciones e información) ── */
+
+.xmb-options,
+.xmb-info {
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--options-w) * var(--u));
+  background: linear-gradient(
+    to right,
+    rgb(0 0 0 / 0) 0,
+    rgb(0 0 0 / 0.34) calc(var(--u) * 5),
+    rgb(0 0 0 / 0.42) 100%
+  );
+  opacity: 0;
+  transform: translateX(calc(var(--u) * 8));
+  visibility: hidden;
+  transition:
+    opacity var(--move) ease,
+    transform var(--move) var(--ease),
+    visibility 0s linear var(--move);
+}
+
+.xmb.is-options .xmb-options,
+.xmb.is-info .xmb-info {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity var(--move) ease,
+    transform var(--move) var(--ease);
+}
+
+/* Origen vertical = borde superior del lienzo 16:9, como en el resto. */
+.xmb-options__rows {
+  position: absolute;
+  left: calc(var(--u) * 9);
+  top: calc(50% - var(--u) * 50);
+}
+
+.xmb-options__bar {
+  left: calc(var(--u) * 3);
+  right: 0;
+  top: calc(50% - var(--u) * 50 + var(--selected-y) * var(--u));
+}
+
+.xmb-option {
+  gap: calc(var(--u) * 1.4);
+  font-size: calc(var(--u) * 2.5);
+}
+
+.xmb-option__check {
+  display: grid;
+  width: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 2.2);
+  opacity: 0;
+}
+
+.xmb-option.is-current .xmb-option__check {
+  opacity: 1;
+}
+
+.xmb-option__swatch {
+  width: calc(var(--u) * 2.4);
+  height: calc(var(--u) * 2.4);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 max(1px, calc(var(--u) * 0.18)) rgb(255 255 255 / 0.85),
+    0 calc(var(--u) * 0.15) calc(var(--u) * 0.4) rgb(0 0 0 / 0.35);
+}
+
+/* ── Panel informativo ─────────────────────────────────── */
+
+.xmb-info {
+  width: calc(var(--info-w) * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-inline: calc(var(--u) * 9) calc(var(--u) * 6);
+  text-shadow: var(--text-shadow);
+}
+
+.xmb-info__title {
+  margin-bottom: calc(var(--u) * 2.2);
+  padding-bottom: calc(var(--u) * 1.4);
+  border-bottom: 1px solid rgb(255 255 255 / 0.3);
+  font-size: calc(var(--u) * 2.6);
+  font-weight: 500;
+}
+
+.xmb-info__rows {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 27) 1fr;
+  align-items: baseline;
+  row-gap: calc(var(--u) * 1.9);
+  column-gap: calc(var(--u) * 2);
+}
+
+.xmb-info__label {
+  font-size: calc(var(--u) * 2);
+  opacity: 0.62;
+}
+
+.xmb-info__value {
+  margin: 0;
+  font-size: calc(var(--u) * 2.3);
+  overflow-wrap: anywhere;
+}

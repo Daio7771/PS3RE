@@ -1,0 +1,111 @@
+:root {
+  --xmb-base: #1f5fc0;
+  --font-ui: 'M PLUS 1 Variable', 'Segoe UI', system-ui, sans-serif;
+  /* 1 % de la altura de un lienzo 16:9 que quepa en la ventana: toda la UI
+     escala con la pantalla, como en la consola. */
+  --u: min(1vh, 0.5625vw);
+  --safe-top: calc(var(--u) * 5.5);
+  --safe-x: calc(var(--u) * 9);
+  --text: #fff;
+  --text-shadow:
+    0 0 calc(var(--u) * 0.8) rgb(0 0 0 / 0.18),
+    0 calc(var(--u) * 0.12) calc(var(--u) * 0.3) rgb(0 0 0 / 0.28);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--xmb-base);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#xmb-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Sin WebGL2: degradado estático equivalente. */
+.no-webgl body {
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--xmb-base) 100%, white 8%) 0%,
+    color-mix(in srgb, var(--xmb-base) 40%, black) 100%
+  );
+}
+
+.no-webgl #xmb-background {
+  display: none;
+}
+
+.ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── Reloj ─────────────────────────────────────────────── */
+
+.clock {
+  position: absolute;
+  z-index: 2; /* por encima del panel de opciones */
+  top: var(--safe-top);
+  right: var(--safe-x);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75em;
+  padding-bottom: calc(var(--u) * 0.55);
+  font-size: calc(var(--u) * 2.3);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--text-shadow);
+  white-space: nowrap;
+}
+
+/* Filete fino que nace bajo la hora y se desvanece hacia la izquierda. */
+.clock::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--u) * 30);
+  height: max(1px, calc(var(--u) * 0.1));
+  background: linear-gradient(to left, rgb(255 255 255 / 0.75), rgb(255 255 255 / 0));
+}
+
+/* ── Medidor de fps (depuración) ───────────────────────── */
+
+.fps-meter {
+  position: absolute;
+  top: var(--safe-top);
+  left: var(--safe-x);
+  padding: 0.35em 0.7em;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.4);
+  font: 12px/1.2 ui-monospace, Consolas, monospace;
+}

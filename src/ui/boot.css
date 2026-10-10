@@ -1,0 +1,216 @@
+/* Secuencia de arranque (ver ui/boot.js). */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background-color: #000;
+  transition: background-color 1500ms ease;
+}
+
+/* ── Pantalla de encendido ─────────────────────────────── */
+
+.boot__prompt {
+  font-size: calc(var(--u) * 1.9);
+  letter-spacing: 0.14em;
+  color: rgb(255 255 255 / 0.85);
+  transition: opacity 300ms ease;
+}
+
+.boot__prompt span {
+  animation: boot-breathe 2.6s ease-in-out infinite;
+}
+
+.boot.is-starting .boot__prompt {
+  opacity: 0;
+}
+
+.in-app .boot__prompt {
+  display: none;
+}
+
+@keyframes boot-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* ── Línea de luz: se abre en el centro y se disuelve donde está la onda ── */
+
+.boot__light {
+  position: absolute;
+  left: 12vw;
+  right: 12vw;
+  top: 53.5%;
+  height: max(2px, calc(var(--u) * 0.22));
+  border-radius: 50%;
+  background: linear-gradient(
+    to right,
+    rgb(255 255 255 / 0),
+    rgb(255 255 255 / 0.95) 30%,
+    #fff 50%,
+    rgb(255 255 255 / 0.95) 70%,
+    rgb(255 255 255 / 0)
+  );
+  box-shadow:
+    0 0 calc(var(--u) * 1.2) calc(var(--u) * 0.2) color-mix(in srgb, var(--xmb-base) 45%, white),
+    0 0 calc(var(--u) * 5) calc(var(--u) * 0.6) color-mix(in srgb, var(--xmb-base) 70%, transparent);
+  opacity: 0;
+  transform: scaleX(0);
+  transition:
+    transform 1100ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 600ms ease;
+}
+
+.boot.is-light .boot__light {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.boot.is-revealing {
+  background-color: rgb(0 0 0 / 0);
+}
+
+.boot.is-revealing .boot__light {
+  opacity: 0;
+  transform: scaleX(1.15) scaleY(12);
+  transition:
+    transform 1300ms ease,
+    opacity 1200ms ease;
+}
+
+/* ── Título: sobre la línea de luz; el subtítulo, debajo ── */
+
+.boot__title {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.boot__name,
+.boot__by {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.boot__name {
+  bottom: calc(46.5% + var(--u) * 2.4); /* borde inferior justo encima de la línea */
+  font-size: calc(var(--u) * 6.6);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.32em;
+  text-shadow:
+    0 0 calc(var(--u) * 2.5) color-mix(in srgb, var(--xmb-base) 55%, white),
+    0 0 calc(var(--u) * 0.6) rgb(255 255 255 / 0.5);
+  opacity: 0;
+  filter: blur(calc(var(--u) * 1.2));
+  transition:
+    opacity 1100ms ease,
+    filter 1200ms ease,
+    letter-spacing 1800ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    scale 900ms ease;
+}
+
+.boot__name span {
+  font-weight: 200;
+}
+
+.boot__by {
+  top: calc(53.5% + var(--u) * 2.6);
+  font-size: calc(var(--u) * 2);
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  opacity: 0;
+  translate: 0 calc(var(--u) * 1);
+  transition:
+    opacity 900ms ease,
+    translate 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.boot.is-title .boot__name {
+  opacity: 1;
+  filter: none;
+  letter-spacing: 0.06em;
+}
+
+.boot.is-subtitle .boot__by {
+  opacity: 0.75;
+  translate: 0 0;
+}
+
+.boot.is-revealing .boot__name,
+.boot.is-revealing .boot__by {
+  opacity: 0;
+  transition-duration: 900ms;
+}
+
+.boot.is-revealing .boot__name {
+  scale: 1.04;
+}
+
+/* Salto: fundido rápido de lo que quede. */
+.boot.is-skipping,
+.boot.is-skipping * {
+  transition-duration: 250ms !important;
+}
+
+.boot.is-skipping {
+  background-color: rgb(0 0 0 / 0);
+}
+
+.boot.is-skipping > * {
+  opacity: 0;
+}
+
+/* ── Interfaz durante el arranque ──────────────────────── */
+
+.boot-pending .xmb,
+.boot-pending .clock {
+  opacity: 0;
+}
+
+.boot-entering .xmb-cat__head {
+  animation: boot-slide-in 700ms cubic-bezier(0.22, 0.8, 0.28, 1) backwards;
+  animation-delay: calc(var(--i) * 80ms);
+}
+
+.boot-entering .xmb-item {
+  animation: boot-rise-in 600ms cubic-bezier(0.22, 0.8, 0.28, 1) backwards;
+  animation-delay: calc(250ms + min(var(--n), 6) * 60ms);
+}
+
+.boot-entering .clock {
+  animation: boot-fade-in 800ms ease 300ms backwards;
+}
+
+/* `translate` se suma al `transform` que ya usan para posicionarse. */
+@keyframes boot-slide-in {
+  from {
+    opacity: 0;
+    translate: calc(var(--u) * 10) 0;
+  }
+}
+
+@keyframes boot-rise-in {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--u) * 3);
+  }
+}
+
+@keyframes boot-fade-in {
+  from {
+    opacity: 0;
+  }
+}

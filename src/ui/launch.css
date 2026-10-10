@@ -1,0 +1,110 @@
+/* Pantalla de lanzamiento de un juego (ver ui/launchView.js). */
+
+.launch {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  /* Sin arte del juego, un degradado del color del XMB. */
+  background: linear-gradient(160deg, color-mix(in srgb, var(--xmb-base) 75%, black), #000 85%);
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.launch.is-visible {
+  opacity: 1;
+}
+
+.launch__hero {
+  position: absolute;
+  inset: 0;
+  background: center / cover no-repeat;
+  opacity: 0;
+  scale: 1.04;
+  transition:
+    opacity 900ms ease 150ms,
+    scale 6s ease-out;
+}
+
+.launch.is-visible.has-hero .launch__hero {
+  opacity: 1;
+  scale: 1;
+}
+
+.launch__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0.15) 55%, rgb(0 0 0 / 0.35)),
+    radial-gradient(ellipse at 30% 60%, rgb(0 0 0 / 0) 40%, rgb(0 0 0 / 0.4));
+}
+
+.launch__content {
+  position: absolute;
+  left: var(--safe-x);
+  right: var(--safe-x);
+  bottom: calc(var(--u) * 12);
+  text-shadow: var(--text-shadow);
+}
+
+.launch__logo {
+  display: none;
+  max-width: calc(var(--u) * 60);
+  max-height: calc(var(--u) * 22);
+  margin-bottom: calc(var(--u) * 2.5);
+  filter: drop-shadow(0 calc(var(--u) * 0.3) calc(var(--u) * 1) rgb(0 0 0 / 0.6));
+}
+
+.launch.has-logo .launch__logo {
+  display: block;
+}
+
+.launch.has-logo .launch__name {
+  display: none;
+}
+
+.launch__name {
+  margin-bottom: calc(var(--u) * 1.5);
+  font-size: calc(var(--u) * 5);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.launch__status {
+  font-size: calc(var(--u) * 2.6);
+}
+
+.launch[data-state='failed'] .launch__status {
+  color: #ffb4b4;
+}
+
+.launch__hint {
+  margin-top: calc(var(--u) * 1.2);
+  font-size: calc(var(--u) * 1.8);
+  opacity: 0.65;
+}
+
+/* Indicador de actividad, abajo a la derecha (sólo mientras se inicia). */
+.launch__busy {
+  position: absolute;
+  right: var(--safe-x);
+  bottom: calc(var(--u) * 7);
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 4);
+  border: calc(var(--u) * 0.45) solid rgb(255 255 255 / 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  animation: launch-spin 900ms linear infinite paused;
+  transition: opacity 300ms ease;
+}
+
+.launch[data-state='launching'] .launch__busy {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@keyframes launch-spin {
+  to {
+    rotate: 1turn;
+  }
+}
