@@ -1,6 +1,7 @@
 // Proceso principal: ventana del XMB a pantalla completa y lanzador de juegos.
 // La interfaz no tiene acceso a Node: sólo a la API mínima de preload.cjs.
-// El lanzador únicamente acepta ids de juegos detectados por él mismo.
+// El lanzador únicamente acepta ids de juegos de su propia biblioteca
+// (detectados o añadidos a mano con el selector de archivos del sistema).
 // Con `--build` (acceso directo, npm start) recompila la interfaz al arrancar.
 // Apagado instantáneo: Ctrl+Q aquí; Select+Start del mando, desde la interfaz.
 import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell } from 'electron';
@@ -9,11 +10,15 @@ import { dirname, join, normalize, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ART_KINDS, loadRecent, saveRecent, scanLibrary, toPublic } from './library/index.js';
 import { watchGame } from './library/watch.js';
+import { launchGame, LaunchError } from './library/launch.js';
+import { addManualGame, removeManualGame, ManualGameError } from './library/manual.js';
+import { distroName } from './library/linux.js';
+import { IS_LINUX, IS_WINDOWS } from './library/platform.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..');
 const DIST = join(ROOT, 'dist');
-const ICON = join(ROOT, 'build', 'icon.ico');
+const ICON = join(ROOT, 'build', IS_WINDOWS ? 'icon.ico' : 'icon.png');
 const DEV_URL = process.env.VITE_DEV_SERVER_URL;
 const APP_URL = 'app://xmb/';
 const BUILD_ON_START = process.argv.includes('--build');
@@ -52,7 +57,22 @@ let library = [];
 let libraryReady = Promise.resolve([]);
 let watcher = null;
 let recent = {};
+let fullScreenBeforeGame = true;
 const recentFile = () => join(app.getPath('userData'), 'recent.json');
+const manualFile = () => join(app.getPath('userData'), 'games.json');
+
+// Qué se puede elegir en Juego → Añadir juego.
+const ADD_GAME_FILTERS = IS_WINDOWS
+  ? [
+      { name: 'Juegos y accesos directos', extensions: ['exe', 'lnk', 'url', 'bat', 'cmd'] },
+      { name: 'Todos los archivos', extensions: ['*'] },
+    ]
+  : [
+      { name: 'Todos los archivos', extensions: ['*'] },
+      { name: 'Accesos directos (.desktop)', extensions: ['desktop'] },
+      { name: 'AppImage', extensions: ['AppImage', 'appimage'] },
+      { name: 'Scripts (.sh)', extensions: ['sh'] },
+    ];
 
 const findGame = (id) => library.find((g) => g.id === id) ?? null;
 const status = (code) => new Response(null, { status: code });
@@ -68,8 +88,14 @@ function decodedPath(url) {
 
 async function refreshLibrary() {
   recent = await loadRecent(recentFile());
-  library = await scanLibrary({ recent });
+  library = await scanLibrary({ recent, manualFile: manualFile() });
   return library;
+}
+
+/** Vuelve a leer la biblioteca (tras añadir o quitar un juego) y la devuelve lista para la interfaz. */
+async function reloadLibrary() {
+  libraryReady = refreshLibrary().catch(() => (library = []));
+  return (await libraryReady).map(toPublic);
 }
 
 function registerProtocols() {
@@ -95,15 +121,42 @@ function registerProtocols() {
   });
 }
 
-function sendGameState(id, state) {
-  if (win && !win.isDestroyed()) win.webContents.send('game:state', { id, state });
+function sendGameState(id, state, error) {
+  if (win && !win.isDestroyed()) win.webContents.send('game:state', { id, state, error });
 }
 
-function bringBack() {
+/** Aparta la consola mientras se juega. */
+function minimizeForGame() {
+  if (!win || win.isDestroyed() || win.isMinimized()) return;
+  fullScreenBeforeGame = win.isFullScreen();
+  win.minimize();
+}
+
+/** Trae la consola al frente (`afterGame`: al terminar una partida). */
+function bringBack(afterGame = false) {
   if (!win || win.isDestroyed()) return;
   if (win.isMinimized()) win.restore();
   win.show();
+  // Al restaurar, algunos escritorios de Linux sacan la ventana de pantalla completa.
+  if (afterGame && fullScreenBeforeGame && !win.isFullScreen()) win.setFullScreen(true);
+  if (IS_LINUX) {
+    // El gestor de ventanas puede negarse a dar el foco a una app que no lo
+    // ha pedido el usuario (en Wayland casi siempre: avisa en vez de traerla).
+    // En X11, un «siempre encima» momentáneo la sube por encima de Steam.
+    win.setAlwaysOnTop(true);
+    win.moveTop();
+    win.focus();
+    setTimeout(() => {
+      if (win && !win.isDestroyed()) win.setAlwaysOnTop(false);
+    }, 400);
+    return;
+  }
   win.focus();
+}
+
+async function showWarning(title, message, detail) {
+  if (!win || win.isDestroyed()) return;
+  await dialog.showMessageBox(win, { type: 'warning', title, message, detail, buttons: ['Aceptar'], noLink: true });
 }
 
 function registerIpc() {
@@ -119,26 +172,82 @@ function registerIpc() {
     const game = findGame(String(id));
     if (!game) return { ok: false, error: 'Juego desconocido' };
     watcher?.stop();
+    watcher = null;
+    let handle;
     try {
-      await shell.openExternal(game.launch.uri);
-    } catch {
-      return { ok: false, error: 'No se ha podido abrir su lanzador' };
+      handle = await launchGame(game);
+    } catch (error) {
+      return { ok: false, error: error instanceof LaunchError ? error.message : 'No se ha podido iniciar el juego' };
     }
     recent[game.id] = Math.floor(Date.now() / 1000);
     game.lastPlayed = recent[game.id];
     saveRecent(recentFile(), recent).catch(() => {});
-    watcher = watchGame(game, {
+    watcher = watchGame(game, handle, {
       onRunning() {
         sendGameState(game.id, 'running');
-        if (win && !win.isDestroyed()) win.minimize();
+        minimizeForGame();
       },
       onExit() {
         watcher = null;
-        bringBack();
+        bringBack(true);
         sendGameState(game.id, 'exited');
+      },
+      // Lo ha recogido otro programa (Heroic, Lutris…) y no se puede seguir:
+      // la consola se aparta y no vuelve sola; al volver, menú.
+      onHandoff() {
+        watcher = null;
+        minimizeForGame();
+        sendGameState(game.id, 'exited');
+      },
+      onFailed(message) {
+        watcher = null;
+        bringBack(true);
+        sendGameState(game.id, 'failed', message);
       },
     });
     return { ok: true };
+  });
+
+  // Juego → Añadir juego: selector de archivos del sistema. Los errores se
+  // explican con un aviso del sistema (el mismo tipo de ventana que el selector).
+  ipcMain.handle('game:add', async (event) => {
+    if (!fromOurWindow(event)) return { ok: false };
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Añadir juego',
+      buttonLabel: 'Añadir',
+      defaultPath: app.getPath('home'),
+      properties: ['openFile', 'dontAddToRecent'],
+      filters: ADD_GAME_FILTERS,
+    });
+    if (canceled || !filePaths?.length) return { ok: false, canceled: true };
+    try {
+      const { id } = await addManualGame(manualFile(), filePaths[0]);
+      return { ok: true, id, games: await reloadLibrary() };
+    } catch (error) {
+      const detail = error instanceof ManualGameError ? error.message : String(error?.message ?? error);
+      await showWarning('Añadir juego', 'No se ha podido añadir el juego', detail);
+      return { ok: false };
+    }
+  });
+
+  ipcMain.handle('game:remove', async (event, id) => {
+    if (!fromOurWindow(event)) return { ok: false };
+    const game = findGame(String(id));
+    if (game?.source !== 'manual') return { ok: false };
+    try {
+      await removeManualGame(manualFile(), game.id);
+    } catch (error) {
+      const detail = error instanceof ManualGameError ? error.message : String(error?.message ?? error);
+      await showWarning('Quitar de la lista', 'No se ha podido quitar el juego', detail);
+      return { ok: false };
+    }
+    return { ok: true, games: await reloadLibrary() };
+  });
+
+  // Nombre de la distribución para Información del sistema (sólo Linux).
+  ipcMain.handle('system:distro', async (event) => {
+    if (!fromOurWindow(event) || !IS_LINUX) return null;
+    return distroName();
   });
 
   ipcMain.handle('game:cancel', (event) => {
@@ -225,7 +334,7 @@ function createWindow() {
   if (capture) import('./devCapture.js').then((m) => m.runCapture(win, capture));
 }
 
-app.on('second-instance', bringBack);
+app.on('second-instance', () => bringBack());
 app.on('window-all-closed', () => app.quit());
 
 app.whenReady().then(async () => {

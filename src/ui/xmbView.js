@@ -51,6 +51,16 @@ export function createXmbView(root, menu, navigation, { infoSources } = {}) {
     const column = el('ul', 'xmb-col');
     column.setAttribute('role', 'listbox');
     column.setAttribute('aria-label', category.label);
+
+    section.append(head, column);
+    track.append(section);
+    return { section, column, items: buildItems(category, column) };
+  });
+  root.append(track);
+  const subMenu = createSubMenuView(root, { infoSources });
+
+  // Elementos de una columna (al arrancar y cuando cambia, p. ej. un juego añadido).
+  function buildItems(category, column) {
     const items = category.items.map((item, ii) => {
       const li = el('li', 'xmb-item');
       li.setAttribute('role', 'option');
@@ -58,16 +68,11 @@ export function createXmbView(root, menu, navigation, { infoSources } = {}) {
       const icon = el('div', 'xmb-item__icon');
       icon.append(item.tile ? gameTile(item) : glyphIcon(item.icon, 'xmb-glyph'));
       li.append(icon, el('span', 'xmb-item__label', item.label));
-      column.append(li);
       return li;
     });
-
-    section.append(head, column);
-    track.append(section);
-    return { section, items };
-  });
-  root.append(track);
-  const subMenu = createSubMenuView(root, { infoSources });
+    column.replaceChildren(...items);
+    return items;
+  }
 
   function render() {
     const { category, items: selection, stack } = navigation.state;
@@ -92,10 +97,21 @@ export function createXmbView(root, menu, navigation, { infoSources } = {}) {
     subMenu.render(stack);
   }
 
-  // Primera colocación sin animar.
-  root.classList.add('no-anim');
-  render();
-  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('no-anim')));
+  // Colocación sin animar (la primera, y tras rehacer una columna).
+  function placeInstantly() {
+    root.classList.add('no-anim');
+    render();
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('no-anim')));
+  }
+  placeInstantly();
 
-  navigation.onChange(render);
+  navigation.onChange((_, change) => {
+    if (change?.type !== 'refresh') {
+      render();
+      return;
+    }
+    const entry = categories[change.category];
+    entry.items = buildItems(menu[change.category], entry.column);
+    placeInstantly();
+  });
 }

@@ -6,7 +6,7 @@ import './ui/launch.css';
 
 import { getConfig, onConfigChange } from './config/config.js';
 import { createBackground } from './xmb/background.js';
-import { buildMenu } from './xmb/menu.js';
+import { buildMenu, buildGameItems, firstGameIndex } from './xmb/menu.js';
 import { createNavigation } from './xmb/navigation.js';
 import { createInput } from './xmb/input/input.js';
 import { createSoundEffects } from './xmb/audio/audio.js';
@@ -59,7 +59,11 @@ const library = await libraryReady;
 const menu = buildMenu(library);
 
 installIconSprite();
-const navigation = createNavigation(menu, { category: menu.findIndex((c) => c.id === 'juego') });
+const gameColumn = menu.findIndex((c) => c.id === 'juego');
+const navigation = createNavigation(menu, {
+  category: gameColumn,
+  items: { [gameColumn]: firstGameIndex(menu[gameColumn].items) },
+});
 createXmbView(document.getElementById('xmb'), menu, navigation, {
   infoSources: createInfoSources({ background, sfx }),
 });
@@ -83,13 +87,59 @@ async function launchGame(game) {
   }
 }
 
-// El proceso principal avisa cuando el juego arranca (y minimiza la app) y
-// cuando se cierra (y la vuelve a traer al frente).
-launcher?.onGameState(({ state }) => {
+// El proceso principal avisa cuando el juego arranca (y minimiza la app),
+// cuando se cierra (y la vuelve a traer al frente) y si falla al empezar.
+launcher?.onGameState(({ state, error }) => {
   if (!launchView.active) return;
   if (state === 'running') launchView.setState('running');
   else if (state === 'exited') launchView.hide();
+  else if (state === 'failed') {
+    launchView.setState('failed', error);
+    sfx.play('error');
+  }
 });
+
+// ── Juegos añadidos a mano ──
+
+// Mientras está abierto el selector de archivos (o se guarda la lista), el
+// XMB no atiende al mando: seguiría moviéndose por detrás.
+let busy = false;
+
+/** Rehace la columna «Juego» con la biblioteca nueva y selecciona `selectId` (o se queda cerca). */
+function refreshGames(games, selectId) {
+  const items = buildGameItems({ mode: library.mode, games });
+  let index = selectId ? items.findIndex((item) => item.id === selectId) : -1;
+  if (index < 0) index = Math.min(navigation.state.items[gameColumn], items.length - 1);
+  // Nunca se queda en «Añadir juego» si hay algo debajo.
+  if (items[index]?.action === 'add-game') index = firstGameIndex(items);
+  navigation.replaceItems(gameColumn, items, index);
+}
+
+async function runBusy(task) {
+  if (busy) return;
+  busy = true;
+  try {
+    await task();
+  } catch {
+    sfx.play('error');
+  } finally {
+    busy = false;
+  }
+}
+
+const addGame = () =>
+  runBusy(async () => {
+    const result = await launcher.addGame();
+    if (result?.ok) refreshGames(result.games, result.id);
+    else if (!result?.canceled) sfx.play('error');
+  });
+
+const removeGame = (id) =>
+  runBusy(async () => {
+    const result = await launcher.removeGame(id);
+    if (result?.ok) refreshGames(result.games, null);
+    else sfx.play('error');
+  });
 
 navigation.onChange((_, change) => {
   const sound = soundForChange(change);
@@ -98,6 +148,8 @@ navigation.onChange((_, change) => {
   if (change.type === 'link') window.open(change.href, '_blank', 'noopener,noreferrer');
   if (change.type === 'launch' && launcher) launchGame(change.item.game);
   if (change.type === 'action' && change.action === 'quit') launcher?.quit();
+  if (change.type === 'action' && change.action === 'add-game' && launcher) addGame();
+  if (change.type === 'action' && change.action === 'remove-game' && launcher) removeGame(change.entry.gameId);
 });
 
 createInput((action) => {
@@ -115,6 +167,7 @@ createInput((action) => {
     launchView.handleAction(action);
     return;
   }
+  if (busy) return;
   // Confirmar algo que no hace nada (relleno, entrada desactivada) suena a error.
   if (!navigation.handle(action) && action === 'confirm') sfx.play('error');
 });

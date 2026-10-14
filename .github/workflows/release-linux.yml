@@ -1,0 +1,93 @@
+# Compila el AppImage de Linux y comprueba que arranca.
+#   · En cada pull request: lo deja como artefacto para probarlo.
+#   · Al subir una etiqueta vX.Y.Z, o a mano desde la pestaña Actions
+#     (indicando la etiqueta): además lo publica en Releases, creando la
+#     etiqueta si no existe. Las notas salen de .github/release-notes/<etiqueta>.md.
+name: AppImage (Linux)
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Etiqueta de la versión (p. ej. v0.9.0)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: appimage-${{ inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      PUBLISH: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Comprobar la versión
+        # La etiqueta y package.json tienen que coincidir (v0.9.0 ↔ 0.9.0).
+        if: env.PUBLISH == 'true'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::La etiqueta $TAG no coincide con la versión de package.json ($version)"
+            exit 1
+          fi
+
+      - name: Compilar el AppImage
+        run: npm run dist:linux
+
+      - name: Comprobar que arranca
+        # Sin pantalla ni FUSE en el runner: Xvfb y extraer al vuelo.
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
+          app="$(ls release/*.AppImage)"
+          out="$(APPIMAGE_EXTRACT_AND_RUN=1 XMB_CAPTURE="$PWD/.github/smoke-steps.json" \
+            timeout 120 xvfb-run -a "$app" --no-sandbox 2>&1 || true)"
+          echo "$out" | grep '\[capture\]' || true
+          echo "$out" | grep -q 'XMB-OK' || { echo "$out" | tail -40; echo "::error::El AppImage no ha arrancado bien"; exit 1; }
+
+      - name: Guardar el AppImage (pull request)
+        if: env.PUBLISH != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: release/*.AppImage
+          retention-days: 14
+
+      - name: Notas de la versión
+        id: notes
+        if: env.PUBLISH == 'true'
+        run: |
+          file=".github/release-notes/$TAG.md"
+          if [ ! -f "$file" ]; then
+            file="$RUNNER_TEMP/notes.md"
+            printf 'AppImage para Linux de 64 bits. Dale permiso de ejecución y ábrelo.\n' > "$file"
+          fi
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar en Releases
+        if: env.PUBLISH == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: PS3 Reimagined ${{ env.TAG }}
+          body_path: ${{ steps.notes.outputs.file }}
+          files: release/*.AppImage
+          fail_on_unmatched_files: true

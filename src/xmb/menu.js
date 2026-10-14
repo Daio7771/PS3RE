@@ -3,7 +3,9 @@ import { ABOUT } from '../config/about.js';
 // Contenido del XMB. `icon` es un glifo de ui/icons.js; `tile` es una
 // carátula (imagen o generada). Al confirmar, un elemento con `children` abre
 // una lista, uno con `info` abre directamente un panel informativo (fuentes en
-// xmb/info/sources.js) y uno con `game` lanza ese juego.
+// xmb/info/sources.js), uno con `game` lanza ese juego y uno con `action`
+// ejecuta una acción de la app. Con △ (options), un elemento con `options`
+// abre esa lista de acciones (p. ej. «Quitar de la lista»).
 // En una lista, una entrada con `setting` abre el panel de opciones de ese
 // ajuste (xmb/settings.js), una con `info` abre un panel informativo, una con
 // `href` abre el enlace fuera, una con `action` ejecuta una acción de la app y
@@ -26,15 +28,32 @@ function gameItem(game) {
     label: game.name,
     tile: game.tile ?? { image: game.art?.header ?? null, hue: h % 360, motif: MOTIFS[h % MOTIFS.length] },
     game: game.demo ? null : game, // los de demostración no lanzan nada
+    // Sólo los añadidos a mano se pueden quitar (los demás son de su tienda).
+    options:
+      game.source === 'manual'
+        ? [{ id: 'remove-game', label: 'Quitar de la lista', action: 'remove-game', gameId: game.id }]
+        : null,
   };
 }
+
+/**
+ * Elementos de la columna «Juego»: en la app, «Añadir juego» arriba (como las
+ * utilidades de la consola, por encima de la barra) y después los juegos.
+ */
+export function buildGameItems({ mode, games }) {
+  const items = mode === 'app' ? [{ id: 'add-game', label: 'Añadir juego', icon: 'add', action: 'add-game' }] : [];
+  if (games.length) items.push(...games.map(gameItem));
+  else items.push({ id: 'no-games', label: 'No se han encontrado juegos', icon: 'gamepad' });
+  return items;
+}
+
+/** Posición inicial en la columna «Juego»: el primer juego (o el aviso de que no hay). */
+export const firstGameIndex = (items) => Math.max(0, items.findIndex((item) => item.action !== 'add-game'));
 
 /** Monta el menú. `library` = { mode: 'app' | 'web', games } (launcher/library.js). */
 export function buildMenu({ mode, games }) {
   const inApp = mode === 'app';
-  const gameItems = games.length
-    ? games.map(gameItem)
-    : [{ id: 'no-games', label: 'No se han encontrado juegos', icon: 'gamepad' }];
+  const gameItems = buildGameItems({ mode, games });
 
   return Object.freeze([
     {

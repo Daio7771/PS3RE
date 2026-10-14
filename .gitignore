@@ -10,3 +10,6 @@ Thumbs.db
 # Configuración local de herramientas
 .claude/
 .vscode/
+
+# Paquetes generados (AppImage)
+release

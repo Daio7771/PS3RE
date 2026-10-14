@@ -145,6 +145,16 @@ function osName(platform, platformVersion, architecture, bitness) {
   return [name, arch].filter(Boolean).join(' · ');
 }
 
+// En Linux el navegador sólo dice «Linux»: la app de escritorio sabe además
+// qué distribución es (/etc/os-release).
+async function linuxDistro() {
+  try {
+    return (await window.launcher?.distroName?.()) || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function detectBrowser() {
   const uad = navigator.userAgentData;
   if (!uad) return { browser: navigator.userAgent.split(' ').pop(), os: navigator.platform };
@@ -156,6 +166,10 @@ export async function detectBrowser() {
     os = osName(uad.platform, hi.platformVersion, hi.architecture, hi.bitness);
   } catch {
     // datos de alta entropía denegados: nos quedamos con los básicos
+  }
+  if (uad.platform === 'Linux') {
+    const distro = await linuxDistro();
+    if (distro) os = [distro, ...os.split(' · ').slice(1)].join(' · '); // «Linux · x64» → «Ubuntu 24.04 · x64»
   }
   const real = brands.filter((b) => !/not.?a.?brand/i.test(b.brand));
   let pick = real.find((b) => b.brand !== 'Chromium') ?? real[0];
