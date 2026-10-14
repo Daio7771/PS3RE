@@ -1,9 +1,9 @@
 {
   "name": "ps3-reimagined",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
-  "description": "Réplica fan-made del XMB de PS3 (sin assets de Sony) que lanza los juegos del PC.",
+  "description": "Réplica fan-made del XMB de PS3 (sin assets de Sony) que lanza los juegos del PC, en Windows y Linux.",
   "author": "Daio7771",
   "license": "MIT",
   "repository": {
@@ -11,6 +11,7 @@
     "url": "git+https://github.com/Daio7771/PS3RE.git"
   },
   "main": "electron/main.js",
+  "desktopName": "ps3-reimagined.desktop",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite",
@@ -18,13 +19,51 @@
     "start": "electron . --build",
     "preview": "vite preview",
     "icon": "electron scripts/make-icon.mjs",
-    "shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcut.ps1"
-  },
-  "dependencies": {
-    "@fontsource-variable/m-plus-1": "^5.3.0"
+    "shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcut.ps1",
+    "dist:linux": "vite build && electron-builder --linux AppImage --x64 --publish never"
   },
   "devDependencies": {
+    "@fontsource-variable/m-plus-1": "^5.3.0",
     "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
     "vite": "^8.3.4"
+  },
+  "build": {
+    "appId": "io.github.daio7771.ps3re",
+    "productName": "PS3 Reimagined",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "icon": "build/icon.png",
+      "synopsis": "Menú al estilo XMB de la PS3 para lanzar tus juegos",
+      "description": "Interfaz al estilo del XMB de la PS3 para lanzar los juegos de Steam y los que añadas a mano.",
+      "artifactName": "PS3-Reimagined-${version}-${arch}.${ext}",
+      "syncDesktopName": true,
+      "desktop": {
+        "entry": {
+          "Keywords": "xmb;ps3;launcher;steam;games;juegos;"
+        }
+      }
+    },
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "publish": null
   }
 }

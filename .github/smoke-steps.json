@@ -1,0 +1,4 @@
+[
+  { "wait": 8000 },
+  { "js": "document.querySelectorAll('.xmb-cat .xmb-item').length > 0 ? 'XMB-OK' : 'XMB-VACIO'" }
+]

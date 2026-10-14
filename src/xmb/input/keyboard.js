@@ -10,6 +10,8 @@ const KEYMAP = {
   Space: 'confirm',
   Escape: 'back',
   Backspace: 'back',
+  KeyT: 'options', // △ (T de «triángulo»)
+  ContextMenu: 'options',
 };
 
 export function attachKeyboard({ press, release }) {

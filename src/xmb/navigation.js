@@ -6,15 +6,18 @@
 //     previsualiza en vivo y sólo guarda al confirmar; un marco 'info' es un
 //     panel de sólo lectura (p. ej. Información del sistema).
 // Sin vuelta al llegar a los extremos, como en la consola.
+// Una columna puede cambiar en marcha (juego añadido o quitado) con
+// replaceItems; la vista la reconstruye al recibir el cambio 'refresh'.
 import { getSavedConfig, previewConfig, cancelPreview, setConfig } from '../config/config.js';
 import { SETTINGS } from './settings.js';
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-export function createNavigation(menu, { category = 0 } = {}) {
+export function createNavigation(menu, { category = 0, items = {} } = {}) {
   const state = {
     category: clamp(category, 0, menu.length - 1),
-    items: menu.map(() => 0),
+    // Elemento seleccionado al empezar en cada columna (por defecto, el primero).
+    items: menu.map((c, ci) => clamp(items[ci] ?? 0, 0, Math.max(0, c.items.length - 1))),
     stack: [],
   };
   const listeners = new Set();
@@ -85,6 +88,10 @@ export function createNavigation(menu, { category = 0 } = {}) {
         emit({ type: 'launch', item }); // lo lanza main.js a través del lanzador
         return true;
       }
+      if (item.action) {
+        emit({ type: 'action', action: item.action, item });
+        return true;
+      }
       return false;
     }
     if (frame.kind === 'list') {
@@ -98,7 +105,7 @@ export function createNavigation(menu, { category = 0 } = {}) {
         return true;
       }
       if (entry.action) {
-        emit({ type: 'action', action: entry.action });
+        emit({ type: 'action', action: entry.action, entry });
         return true;
       }
       return false;
@@ -110,6 +117,27 @@ export function createNavigation(menu, { category = 0 } = {}) {
     state.stack.pop();
     emit({ type: 'commit' });
     return true;
+  }
+
+  // △ sobre un elemento del XMB: su lista de acciones, si tiene.
+  function openItemOptions() {
+    if (top()) return false;
+    const item = currentItem();
+    return item?.options?.length ? openList(item.options) : false;
+  }
+
+  /**
+   * Cambia los elementos de la columna `ci` (p. ej. tras añadir o quitar un
+   * juego), cierra lo que hubiera abierto encima y selecciona `index`.
+   */
+  function replaceItems(ci, items, index = state.items[ci]) {
+    menu[ci].items = items;
+    if (ci === state.category) {
+      for (const frame of state.stack) if (frame.kind === 'options') cancelPreview(frame.key);
+      state.stack.length = 0;
+    }
+    state.items[ci] = clamp(index, 0, Math.max(0, items.length - 1));
+    emit({ type: 'refresh', category: ci });
   }
 
   function back() {
@@ -140,10 +168,13 @@ export function createNavigation(menu, { category = 0 } = {}) {
           return confirm();
         case 'back':
           return back();
+        case 'options':
+          return openItemOptions();
         default:
-          return false; // options (△): fase posterior
+          return false;
       }
     },
+    replaceItems,
     onChange(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);

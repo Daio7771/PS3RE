@@ -161,6 +161,11 @@ const GLYPHS = {
   download: `
     <path ${S} d="M28 9h8v18h8.5L32 40.5 19.5 27H28z"/>
     <path ${SS(5)} stroke-linecap="round" stroke-linejoin="round" d="M11 39v10a4 4 0 0 0 4 4h34a4 4 0 0 0 4-4V39"/>`,
+
+  // ── Juego ────────────────────────────────────────────────
+  add: `
+    <circle ${S} cx="32" cy="32" r="23"/>
+    <path ${DS(6)} stroke-linecap="round" d="M32 21v22M21 32h22"/>`,
 };
 
 /** Inserta el sprite en el documento (una sola vez). */

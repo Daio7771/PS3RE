@@ -1,13 +1,18 @@
-// Biblioteca unificada: Steam + EA app + Ubisoft Connect.
+// Biblioteca unificada: Steam + juegos añadidos a mano en todas partes, y
+// EA app + Ubisoft Connect en Windows (en Linux no tienen versión propia).
 // Los datos internos (rutas, URIs de lanzamiento) se quedan en el proceso
 // principal; a la interfaz sólo llega toPublic().
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { IS_WINDOWS } from './platform.js';
 import { scanSteam } from './steam.js';
 import { scanPublishers } from './publishers.js';
+import { loadManualGames } from './manual.js';
 
-export async function scanLibrary({ recent = {} } = {}) {
-  const results = await Promise.allSettled([scanSteam(), scanPublishers()]);
+export async function scanLibrary({ recent = {}, manualFile } = {}) {
+  const scans = [scanSteam(), loadManualGames(manualFile)];
+  if (IS_WINDOWS) scans.push(scanPublishers());
+  const results = await Promise.allSettled(scans);
   const games = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
   for (const game of games) game.lastPlayed = Math.max(game.lastPlayed, recent[game.id] ?? 0);
   // Lo último jugado primero; lo nunca jugado, por nombre.
